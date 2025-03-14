@@ -38,17 +38,17 @@ To run this project locally or contribute to its development, follow these steps
 
     ```bash
     git clone https://github.com/macphersoncole/Daylight-Saving-Calculator.git
-    cd daylight-saving-calculator
+    cd Daylight-Saving-Calculator
     ```
 
-1. Create a virtual environment (optional but recommended):
+2. Create a virtual environment (optional but recommended):
 
     ```bash
     python -m venv venv
     source venv/bin/activate  # On Windows: venv\Scripts\activate
     ```
 
-1. Install dependencies:
+3. Install dependencies:
 
     ```bash
     pip install -r requirements.txt
@@ -61,10 +61,10 @@ To run this project locally or contribute to its development, follow these steps
     pytz==2023.3
     ```
 
-1. Run the Python script:
+4. Run the Python script:
 
     ```bash
-    python suntime_optimizer.py
+    python Daylight_Saving_Calculator.py
     ```
     
     This will calculate the optimal offset for a hardcoded example (e.g., New York City, sunrise at 7:00 AM, sunset at 7:00 PM). Modify the script to test your own inputs.
@@ -73,7 +73,7 @@ To run this project locally or contribute to its development, follow these steps
 
 ### Command Line
 
-Edit `daylight_saving_calculator.py` with your desired sunrise, sunset, and location:
+Edit `Daylight_Saving_Calculator.py` with your desired sunrise, sunset, and location:
 
 ```Python
 desired_sunrise = "07:00"
@@ -86,16 +86,16 @@ Run the script to see the recommended offset and sample sunrise/sunset times.
 
 ### Web Interface (TBI)
 1. Open the GitHub Pages site (once deployed).
-1. Enter your desired sunrise and sunset times (e.g., "07:00" and "19:00").
-1. Input your latitude and longitude (e.g., 40.7128, -74.0060 for NYC).
-1. Click "Calculate" to view your optimal time offset and a summary of results.
+2. Enter your desired sunrise and sunset times (e.g., "07:00" and "19:00").
+3. Input your latitude and longitude (e.g., 40.7128, -74.0060 for NYC).
+4. Click "Calculate" to view your optimal time offset and a summary of results.
 
 ## How It Works
 
 1. **Solar Calculations**: Uses the `astral` library to compute sunrise and sunset times for every day of the year based on your location.
-1. **Offset Testing**: Tests a range of time offsets (e.g., -12 to +12 hours in 15-minute increments).
-1. **Scoring**: Measures how much sunlight falls between your desired sunrise and sunset times, selecting the offset with the highest score.
-1. **Output**: Provides the best offset and examples of sunrise/sunset times throughout the year.
+2. **Offset Testing**: Tests a range of time offsets (e.g., -12 to +12 hours in 15-minute increments).
+3. **Scoring**: Measures how much sunlight falls between your desired sunrise and sunset times, selecting the offset with the highest score.
+4. **Output**: Provides the best offset and examples of sunrise/sunset times throughout the year.
 
 ## Project Structure
 
