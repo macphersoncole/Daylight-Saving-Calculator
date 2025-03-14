@@ -37,7 +37,7 @@ To run this project locally or contribute to its development, follow these steps
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/[your-username]/suntime-optimizer.git
+    git clone https://github.com/macphersoncole/Daylight-Saving-Calculator.git
     cd daylight-saving-calculator
     ```
 
