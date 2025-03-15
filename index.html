@@ -4,14 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SunTime Optimizer</title>
-    <!-- Load PyScript (latest version) -->
-    <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
-    <script defer src="https://pyscript.net/latest/pyscript.js"></script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         label { display: block; margin: 10px 0; }
         #output { margin-top: 20px; white-space: pre-wrap; }
     </style>
+    <!-- Load SunCalc library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
 </head>
 <body>
     <h1>SunTime Optimizer</h1>
@@ -25,126 +24,107 @@
         <button type="submit">Calculate</button>
     </form>
 
-    <div id="output">Loading PyScript...</div>
+    <div id="output"></div>
 
-    <py-config>
-        packages = ["astral", "pytz", "timezonefinder"]
-    </py-config>
-
-    <py-script>
-        from astral import LocationInfo
-        from astral.sun import sun
-        from datetime import datetime, timedelta
-        import pytz
-        from timezonefinder import TimezoneFinder
-        from js import document
-
-        # Function to get form inputs
-        def get_inputs():
-            sunrise = document.getElementById("sunrise").value
-            sunset = document.getElementById("sunset").value
-            latitude = float(document.getElementById("latitude").value)
-            longitude = float(document.getElementById("longitude").value)
-            return sunrise, sunset, latitude, longitude
-
-        # Function to calculate sunrise/sunset for a given day and offset
-        def get_sun_times(date, offset_hours, latitude, longitude):
-            location = LocationInfo("Custom", "Region", "UTC", latitude, longitude)
-            s = sun(location.observer, date=date, tzinfo=pytz.UTC)
-            sunrise = s["sunrise"] + timedelta(hours=offset_hours)
-            sunset = s["sunset"] + timedelta(hours=offset_hours)
-            return sunrise, sunset
-
-        # Convert desired times to datetime objects for comparison
-        def parse_time(time_str, date):
-            return datetime.strptime(f"{date.strftime('%Y-%m-%d')} {time_str}", "%Y-%m-%d %H:%M").replace(tzinfo=pytz.UTC)
-
-        # Score function: how much sunlight falls between desired times
-        def score_offset(offset_hours, year, latitude, longitude, desired_sunrise, desired_sunset):
-            total_sunlight = 0
-            date = datetime(year, 1, 1, tzinfo=pytz.UTC)
-            for day in range(365):
-                current_date = date + timedelta(days=day)
-                sunrise, sunset = get_sun_times(current_date, offset_hours, latitude, longitude)
-                desired_start = parse_time(desired_sunrise, current_date)
-                desired_end = parse_time(desired_sunset, current_date)
-                sunlight_start = max(sunrise, desired_start)
-                sunlight_end = min(sunset, desired_end)
-                if sunlight_end > sunlight_start:
-                    total_sunlight += (sunlight_end - sunlight_start).total_seconds() / 3600
-            return total_sunlight
-
-        # Function to get current UTC offset for a location
-        def get_current_offset(lat, lon, date):
-            tf = TimezoneFinder()
-            timezone_str = tf.timezone_at(lat=lat, lng=lon)
-            if timezone_str is None:
-                return None
-            timezone = pytz.timezone(timezone_str)
-            naive_date = date.replace(tzinfo=None)
-            local_date = timezone.localize(naive_date)
-            utc_offset = local_date.utcoffset().total_seconds() / 3600
-            return utc_offset, timezone_str
-
-        # Main calculation function
-        def calculate(*args, **kwargs):
-            desired_sunrise, desired_sunset, latitude, longitude = get_inputs()
-            current_date = datetime.now(pytz.UTC)
-            current_year = current_date.year
-
-            best_offset = None
-            best_score = -1
-            for offset in [x / 4 for x in range(-48, 49)]:
-                score = score_offset(offset, current_year, latitude, longitude, desired_sunrise, desired_sunset)
-                if score > best_score:
-                    best_score = score
-                    best_offset = offset
-
-            current_offset_info = get_current_offset(latitude, longitude, current_date)
-            if current_offset_info:
-                current_offset, timezone_name = current_offset_info
-            else:
-                current_offset = None
-                timezone_name = "Unknown"
-
-            output = []
-            output.append(f"Desired Sunrise Time: {desired_sunrise}")
-            output.append(f"Desired Sunset Time: {desired_sunset}")
-            output.append(f"Location: Latitude {latitude}, Longitude {longitude}")
-            output.append(f"\nBest offset: {best_offset:+.2f} hours")
-            output.append(f"Total sunlight hours in desired window: {best_score:.1f}")
-            if current_offset is not None:
-                output.append(f"Current offset ({timezone_name}): {current_offset:+.2f} hours")
-                offset_difference = best_offset - current_offset
-                output.append(f"Difference (Best - Current): {offset_difference:+.2f} hours")
-            else:
-                output.append("Current offset: Could not determine timezone for this location")
-
-            summer_solstice = datetime(current_year, 6, 21, tzinfo=pytz.UTC)
-            winter_solstice = datetime(current_year, 12, 21, tzinfo=pytz.UTC)
-
-            output.append("\nSunrise and Sunset Times with Best Offset:")
-            for key_date in [winter_solstice, summer_solstice, current_date]:
-                sunrise, sunset = get_sun_times(key_date, best_offset, latitude, longitude)
-                date_str = key_date.strftime('%B %d, %Y')
-                sunrise_str = sunrise.strftime('%H:%M')
-                sunset_str = sunset.strftime('%H:%M')
-                output.append(f"{date_str}: Sunrise at {sunrise_str}, Sunset at {sunset_str}")
-
-            document.getElementById("output").innerText = "\n".join(output)
-
-        # Bind the form submission to the calculate function
-        form = document.getElementById("sun-form")
-        form.addEventListener("submit", lambda e: (e.preventDefault(), calculate()))
-    </py-script>
-
-    <!-- Fallback if PyScript fails to load -->
     <script>
-        window.addEventListener("load", function() {
-            if (typeof pyscript === "undefined") {
-                document.getElementById("output").innerText = "Error: PyScript failed to load. Please check your internet connection or try a different browser.";
+        // Parse HH:MM time string to hours
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours + minutes / 60;
+        }
+
+        // Format hours to HH:MM
+        function formatTime(hours) {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        // Get sunrise/sunset times for a date with offset
+        function getSunTimes(date, offsetHours, latitude, longitude) {
+            const times = SunCalc.getTimes(date, latitude, longitude);
+            const sunrise = times.sunrise.getUTCHours() + times.sunrise.getUTCMinutes() / 60 + offsetHours;
+            const sunset = times.sunset.getUTCHours() + times.sunset.getUTCMinutes() / 60 + offsetHours;
+            return { sunrise, sunset };
+        }
+
+        // Score function: sunlight hours between desired times
+        function scoreOffset(offsetHours, year, latitude, longitude, desiredSunrise, desiredSunset) {
+            let totalSunlight = 0;
+            const startDate = new Date(Date.UTC(year, 0, 1));
+            for (let day = 0; day < 365; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setUTCDate(startDate.getUTCDate() + day);
+                const { sunrise, sunset } = getSunTimes(currentDate, offsetHours, latitude, longitude);
+                const sunlightStart = Math.max(sunrise, desiredSunrise);
+                const sunlightEnd = Math.min(sunset, desiredSunset);
+                if (sunlightEnd > sunlightStart) {
+                    totalSunlight += sunlightEnd - sunlightStart;
+                }
             }
-        });
+            return totalSunlight;
+        }
+
+        // Get current UTC offset (approximation via browser or manual lookup)
+        function getCurrentOffset(latitude, longitude) {
+            // Simplified: Use browser's timezone offset as a proxy (not location-specific)
+            const now = new Date();
+            const browserOffset = -now.getTimezoneOffset() / 60; // Convert minutes to hours, negate for UTC
+            // For precise offset, we'd need a timezone database or API (e.g., Google Time Zone API)
+            return { offset: browserOffset, name: Intl.DateTimeFormat().resolvedOptions().timeZone };
+        }
+
+        // Main calculation function
+        function calculate(event) {
+            event.preventDefault();
+            const desiredSunriseStr = document.getElementById("sunrise").value;
+            const desiredSunsetStr = document.getElementById("sunset").value;
+            const latitude = parseFloat(document.getElementById("latitude").value);
+            const longitude = parseFloat(document.getElementById("longitude").value);
+
+            const desiredSunrise = parseTime(desiredSunriseStr);
+            const desiredSunset = parseTime(desiredSunsetStr);
+            const currentYear = new Date().getUTCFullYear();
+
+            let bestOffset = null;
+            let bestScore = -1;
+            for (let offset = -12; offset <= 12; offset += 0.25) { // -12 to +12 in 15-min increments
+                const score = scoreOffset(offset, currentYear, latitude, longitude, desiredSunrise, desiredSunset);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestOffset = offset;
+                }
+            }
+
+            const currentOffsetInfo = getCurrentOffset(latitude, longitude);
+            const currentOffset = currentOffsetInfo.offset;
+            const timezoneName = currentOffsetInfo.name;
+
+            const output = [];
+            output.push(`Desired Sunrise Time: ${desiredSunriseStr}`);
+            output.push(`Desired Sunset Time: ${desiredSunsetStr}`);
+            output.push(`Location: Latitude ${latitude}, Longitude ${longitude}`);
+            output.push(`\nBest offset: ${bestOffset.toFixed(2)} hours`);
+            output.push(`Total sunlight hours in desired window: ${bestScore.toFixed(1)}`);
+            output.push(`Current offset (${timezoneName}): ${currentOffset.toFixed(2)} hours`);
+            output.push(`Difference (Best - Current): ${(bestOffset - currentOffset).toFixed(2)} hours`);
+
+            const summerSolstice = new Date(Date.UTC(currentYear, 5, 21)); // June 21
+            const winterSolstice = new Date(Date.UTC(currentYear, 11, 21)); // December 21
+            const currentDate = new Date();
+
+            output.push("\nSunrise and Sunset Times with Best Offset:");
+            [winterSolstice, summerSolstice, currentDate].forEach(date => {
+                const { sunrise, sunset } = getSunTimes(date, bestOffset, latitude, longitude);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                output.push(`${dateStr}: Sunrise at ${formatTime(sunrise)}, Sunset at ${formatTime(sunset)}`);
+            });
+
+            document.getElementById("output").innerText = output.join("\n");
+        }
+
+        // Bind form submission
+        document.getElementById("sun-form").addEventListener("submit", calculate);
     </script>
 </body>
 </html>
