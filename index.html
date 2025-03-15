@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunTime Optimizer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label { display: block; margin: 10px 0; }
+        #output { margin-top: 20px; white-space: pre-wrap; }
+    </style>
+    <!-- Load SunCalc library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+</head>
+<body>
+    <h1>SunTime Optimizer</h1>
+    <p>Enter your desired sunrise and sunset times, and your location, to find the optimal time offset.</p>
+
+    <form id="sun-form">
+        <label>Desired Sunrise Time (HH:MM): <input type="text" id="sunrise" value="06:00" pattern="\d{2}:\d{2}" required></label>
+        <label>Desired Sunset Time (HH:MM): <input type="text" id="sunset" value="19:15" pattern="\d{2}:\d{2}" required></label>
+        <label>Latitude: <input type="number" id="latitude" value="42.3555" step="0.0001" required></label>
+        <label>Longitude: <input type="number" id="longitude" value="-71.0565" step="0.0001" required></label>
+        <button type="submit">Calculate</button>
+    </form>
+
+    <div id="output"></div>
+
+    <script>
+        // Parse HH:MM time string to hours
+        function parseTime(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours + minutes / 60;
+        }
+
+        // Format hours to HH:MM
+        function formatTime(hours) {
+            const h = Math.floor(hours);
+            const m = Math.round((hours - h) * 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        // Get sunrise/sunset times for a date with offset
+        function getSunTimes(date, offsetHours, latitude, longitude) {
+            const times = SunCalc.getTimes(date, latitude, longitude);
+            const sunrise = times.sunrise.getUTCHours() + times.sunrise.getUTCMinutes() / 60 + offsetHours;
+            const sunset = times.sunset.getUTCHours() + times.sunset.getUTCMinutes() / 60 + offsetHours;
+            return { sunrise, sunset };
+        }
+
+        // Score function: sunlight hours between desired times
+        function scoreOffset(offsetHours, year, latitude, longitude, desiredSunrise, desiredSunset) {
+            let totalSunlight = 0;
+            const startDate = new Date(Date.UTC(year, 0, 1));
+            for (let day = 0; day < 365; day++) {
+                const currentDate = new Date(startDate);
+                currentDate.setUTCDate(startDate.getUTCDate() + day);
+                const { sunrise, sunset } = getSunTimes(currentDate, offsetHours, latitude, longitude);
+                const sunlightStart = Math.max(sunrise, desiredSunrise);
+                const sunlightEnd = Math.min(sunset, desiredSunset);
+                if (sunlightEnd > sunlightStart) {
+                    totalSunlight += sunlightEnd - sunlightStart;
+                }
+            }
+            return totalSunlight;
+        }
+
+        // Get current UTC offset (approximation via browser or manual lookup)
+        function getCurrentOffset(latitude, longitude) {
+            // Simplified: Use browser's timezone offset as a proxy (not location-specific)
+            const now = new Date();
+            const browserOffset = -now.getTimezoneOffset() / 60; // Convert minutes to hours, negate for UTC
+            // For precise offset, we'd need a timezone database or API (e.g., Google Time Zone API)
+            return { offset: browserOffset, name: Intl.DateTimeFormat().resolvedOptions().timeZone };
+        }
+
+        // Main calculation function
+        function calculate(event) {
+            event.preventDefault();
+            const desiredSunriseStr = document.getElementById("sunrise").value;
+            const desiredSunsetStr = document.getElementById("sunset").value;
+            const latitude = parseFloat(document.getElementById("latitude").value);
+            const longitude = parseFloat(document.getElementById("longitude").value);
+
+            const desiredSunrise = parseTime(desiredSunriseStr);
+            const desiredSunset = parseTime(desiredSunsetStr);
+            const currentYear = new Date().getUTCFullYear();
+
+            let bestOffset = null;
+            let bestScore = -1;
+            for (let offset = -12; offset <= 12; offset += 0.25) { // -12 to +12 in 15-min increments
+                const score = scoreOffset(offset, currentYear, latitude, longitude, desiredSunrise, desiredSunset);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestOffset = offset;
+                }
+            }
+
+            const currentOffsetInfo = getCurrentOffset(latitude, longitude);
+            const currentOffset = currentOffsetInfo.offset;
+            const timezoneName = currentOffsetInfo.name;
+
+            const output = [];
+            output.push(`Desired Sunrise Time: ${desiredSunriseStr}`);
+            output.push(`Desired Sunset Time: ${desiredSunsetStr}`);
+            output.push(`Location: Latitude ${latitude}, Longitude ${longitude}`);
+            output.push(`\nBest offset: ${bestOffset.toFixed(2)} hours`);
+            output.push(`Total sunlight hours in desired window: ${bestScore.toFixed(1)}`);
+            output.push(`Current offset (${timezoneName}): ${currentOffset.toFixed(2)} hours`);
+            output.push(`Difference (Best - Current): ${(bestOffset - currentOffset).toFixed(2)} hours`);
+
+            /*
+            const summerSolstice = new Date(Date.UTC(currentYear, 5, 21)); // June 21
+            const winterSolstice = new Date(Date.UTC(currentYear, 11, 21)); // December 21
+            const currentDate = new Date();
+
+            output.push("\nSunrise and Sunset Times with Best Offset:");
+            [winterSolstice, summerSolstice, currentDate].forEach(date => {
+                const { sunrise, sunset } = getSunTimes(date, bestOffset, latitude, longitude);
+                const dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+                output.push(`${dateStr}: Sunrise at ${formatTime(sunrise)}, Sunset at ${formatTime(sunset)}`);
+            });
+            */
+
+            document.getElementById("output").innerText = output.join("\n");
+        }
+
+        // Bind form submission
+        document.getElementById("sun-form").addEventListener("submit", calculate);
+    </script>
+</body>
+</html>
