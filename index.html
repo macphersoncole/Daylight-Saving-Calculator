@@ -109,6 +109,7 @@
             output.push(`Current offset (${timezoneName}): ${currentOffset.toFixed(2)} hours`);
             output.push(`Difference (Best - Current): ${(bestOffset - currentOffset).toFixed(2)} hours`);
 
+            /*
             const summerSolstice = new Date(Date.UTC(currentYear, 5, 21)); // June 21
             const winterSolstice = new Date(Date.UTC(currentYear, 11, 21)); // December 21
             const currentDate = new Date();
@@ -119,6 +120,7 @@
                 const dateStr = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
                 output.push(`${dateStr}: Sunrise at ${formatTime(sunrise)}, Sunset at ${formatTime(sunset)}`);
             });
+            */
 
             document.getElementById("output").innerText = output.join("\n");
         }
