@@ -11,7 +11,7 @@ The idea behind SunTime Optimizer is simple: if we abolished DST and stuck to a 
 - Input your desired sunrise and sunset times.
 - Specify your location (latitude and longitude).
 - Get a recommended time offset and see how sunrise/sunset times vary across the year.
-- Web interface for easy access, hosted on GitHub Pages. (TBI)
+- Web interface for easy access, hosted on GitHub Pages.
 
 ### Use Case
 
@@ -84,7 +84,7 @@ longitude = -74.0060
 
 Run the script to see the recommended offset and sample sunrise/sunset times.
 
-### Web Interface (TBI)
+### Web Interface
 1. Open the GitHub Pages site (once deployed).
 2. Enter your desired sunrise and sunset times (e.g., "07:00" and "19:00").
 3. Input your latitude and longitude (e.g., 40.7128, -74.0060 for NYC).
