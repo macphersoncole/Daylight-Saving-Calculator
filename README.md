@@ -21,7 +21,7 @@ The idea behind SunTime Optimizer is simple: if we abolished DST and stuck to a 
 
 ## Demo
 
-Check out the live demo on [GitHub Pages]() (link to be added once deployed).
+Check out the live demo on [https://macphersoncole.github.io/Daylight-Saving-Calculator/](https://macphersoncole.github.io/Daylight-Saving-Calculator/).
 
 ## Installation
 
@@ -103,9 +103,6 @@ Run the script to see the recommended offset and sample sunrise/sunset times.
 suntime-optimizer/
 ├── suntime_optimizer.py  # Core Python script for calculations
 ├── index.html            # GitHub Pages frontend
-├── styles.css            # (Optional) Styling for the web interface
-├── script.js             # (Optional) JavaScript for frontend logic
-├── data/                 # (Optional) Precomputed results or lookup tables
 ├── requirements.txt      # Python dependencies
 └── README.md             # This file
 ```
