@@ -101,7 +101,7 @@ Run the script to see the recommended offset and sample sunrise/sunset times.
 
 ```text
 suntime-optimizer/
-├── suntime_optimizer.py  # Core Python script for calculations
+├── Daylight_Saving_Calculator.py  # Core Python script for calculations
 ├── index.html            # GitHub Pages frontend
 ├── requirements.txt      # Python dependencies
 └── README.md             # This file
